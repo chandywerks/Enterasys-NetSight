@@ -112,9 +112,7 @@ sub snmp
 }
 1;
 
-=head1 NAME
-
-Enterasys::NetSight - Provides an abstraction layer between SOAP::Lite and the Netsight Device WebService.
+# ABSTRACT: Provides an abstraction layer between SOAP::Lite and the Netsight Device WebService.
 
 =head1 SYNOPSIS
 
@@ -132,6 +130,7 @@ Enterasys::NetSight - Provides an abstraction layer between SOAP::Lite and the N
 	print $netsight->{soap}->getSnmpCredentialAsNgf($ip)->result(),"\n";
 
 	# However there are methods available to put the data in a more usable hash table,
+	# for example using the 'snmp' method,
 	print Dumper({$netsight->snmp($ip)});
 
 	# Used with the perl SNMP module you can use the return of that method to create a
@@ -157,9 +156,5 @@ as an argument to make a new SNMP::Session with the perl SNMP module. Returns un
 SNMP creds found.
 
 =back
-
-=head1 AUTHOR
-
-Chris Handwerker - <chandwer@enterasys.com>
 
 =cut
