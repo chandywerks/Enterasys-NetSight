@@ -9,11 +9,22 @@ See perldoc for usage details
 
 ### INSTALLATION
 
-To install the module:
+If you just want to use the module [download a package from here](https://metacpan.org/) or through a cpan client. NOTE: net yet on cpan
 
+If you wish the build a package from the git repository you need the Dist::Zilla application and git.
+
+To build a package from git:
+
+	git init
+	git pull https://github.com/chandwer/Enterasys-NetSight.git
+	dzil build
+
+To install the built package:
+
+	cd Enterasys-NetSight-#.##
     perl Makefile.PL
-    make
-    make install
+    make test
+    sudo make install
 
 ### DEPENDENCIES
 
@@ -25,7 +36,7 @@ To install the module:
 
 Chris Handwerker 2013 <<chandwer@enterasys.com>>
 
-#### LICENSE
+### LICENSE
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
