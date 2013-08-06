@@ -43,8 +43,8 @@ To install the built package:
 ### DEPENDENCIES
 
 * SOAP::Lite
-* Net::SSL
 * Socket
+* Carp
 
 ### AUTHOR
 
