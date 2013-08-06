@@ -9,7 +9,21 @@ See perldoc for usage details.
 
 ### INSTALLATION
 
-If you just want to use the module [download a package from here](https://metacpan.org/) or through a cpan client. NOTE: net yet on cpan
+If you want to just use the module download the tar.gz package above and run the following,
+
+	tar -xvf Enterasys-NetSight-#.##.tar.gz
+	cd Enterasys-NetSight-#.##
+	perl Makefile.PL
+	make test
+	sudo make install
+
+If make test fails you are probably missing SOAP::Lite or one of SOAP::Lite's dependencies.
+
+Alternatively you can have cpan minus install the package and satisfy all dependencies for you like so,
+
+	cpanm Enterasys-NetSight-#.##.tar.gz
+
+### BUILDING PACKAGE FROM GIT
 
 If you wish the build a package from the git repository you need the Dist::Zilla application and git.
 
