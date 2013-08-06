@@ -5,7 +5,7 @@ This module provides an abstraction layer between SOAP::Lite and the NetSight De
 
 For example the 'snmp' method in Enterasys::NetSight returns snmp creds for a given IP as a hash table which can be used with the perl SNMP module to create a new SNMP::Session object.
 
-See perldoc for usage details
+See perldoc for usage details.
 
 ### INSTALLATION
 
