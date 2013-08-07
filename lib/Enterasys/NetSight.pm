@@ -249,25 +249,28 @@ sub _resolv
 				pass	=> $password,
 			}) or die $!;
 
-	# You can make any API call available with the SOAP::Lite object accessable with $netsight->{soap}
-	# For example the following would print a NetSight Generated Format string containing SNMP credentials for a specified IP address,
+You can make any API call available with the SOAP::Lite object accessable with $netsight->{soap}.
+
+For example the following would print a NetSight Generated Format string containing SNMP credentials for a specified IP address,
 
 	print $netsight->{soap}->getSnmpCredentialAsNgf($ip)->result(),"\n";
 
-	# However this module provides shortcut methods returning useful data formats to work with. 
-	# For example we can parse the NGF formatted string into a hash table with the getSnmp method,
+However this module provides shortcut methods returning useful data formats to work with. 
+
+For example we can parse the NGF formatted string into a hash table with the getSnmp method,
 
 	print Dumper {$netsight->getSnmp({host=>$ip})};
 
-	# Used with the perl SNMP module you can use the return of that method to create a new SNMP session object,
+Used with the perl SNMP module you can use the return of that method to create a new SNMP session object,
 
 	my $session = new SNMP::Session($netsight->getSnmp({host=>$ip}));
 
-	# Which you could then use to query a mib,
+Which you could then use to query a mib,
 
 	print $session->get('sysDescr.0');
 
-	# More examples
+More examples
+
 	print Dumper $netsight->getCli({host=>$ip, refresh=>1});
 	print Dumper $netsight->getDevice({host=>$ip});
 
