@@ -38,6 +38,8 @@ sub new
 	# Make sure we can make an API call or return undef
 	return defined(eval{$self->{soap}->isIpV6Enabled()})?bless($self, $class):undef;
 }
+
+# Get methods
 sub getAllDevices
 {
 	# Returns a hash table with IP Addresses for keys
@@ -54,12 +56,9 @@ sub getAllDevices
 
 	# Grab IP out of each WsDeviceListResult
 	while(my($key,$value)=each($call->result->{data}))
-	{
-		print "$key => $value\n";
-		$devices{$value->{ip}}=$value;
-	}
+		{ $devices{$value->{ip}}=$value }
 
-	return \%devices;
+	return %devices;
 }
 sub getDevice
 {
@@ -156,7 +155,7 @@ sub getSnmp
 
 	return %snmp;
 }
-sub getCli
+sub getAuth
 {
 	# Runs the 'exportDevices' method if $self->{devices} hash ref is undefined
 	# and uses that to parse Cli credentials for all other calls.
@@ -178,7 +177,7 @@ sub getCli
 	$creds{user}=$device->{cliUsername};
 	$creds{pass}=$device->{cliLogin};
 	
-	return \%creds;
+	return %creds;
 }
 sub exportDevices
 {
@@ -205,7 +204,7 @@ sub exportDevices
 		$table{$temp{dev}}=\%temp;
 	}
 
-	return \%table;
+	return %table;
 }
 sub ipV6Enabled
 {
@@ -227,6 +226,50 @@ sub netSnmpEnabled
 
 	return $call->result();
 }
+
+# Add Methods
+sub addAuth
+{
+
+}
+sub addSnmp
+{
+
+}
+sub addDevice
+{
+
+}
+sub addProfile
+{
+
+}
+
+# Update Methods
+sub updateAuth
+{
+
+}
+sub updateSnmp
+{
+
+}
+sub updateDevice
+{
+
+}
+sub updateProfile
+{
+
+}
+
+# Delete Methods
+sub deleteDevice
+{
+
+}
+
+# Private
 sub _resolv
 {
 	# Resolve IP for a hostname
@@ -271,7 +314,7 @@ Which you could then use to query a mib,
 
 More examples
 
-	print Dumper $netsight->getCli({host=>$ip, refresh=>1});
+	print Dumper $netsight->getAuth({host=>$ip, refresh=>1});
 	print Dumper $netsight->getDevice({host=>$ip});
 
 	print Dumper $netsight->getAllDevices();
@@ -327,7 +370,7 @@ Optional, defaults to highest privilage level available. Options are su, rw, ro 
 
 =back
 
-=item getCli()
+=item getAuth()
 
 Returns a hash table containing CLI credentials: host, user, and pass. Because there is no API call to get a single CLI cred, similar to getSnmpCredentialAsNgf, this method runs the "exportDevices" method once and keeps the device information in memory.
 
