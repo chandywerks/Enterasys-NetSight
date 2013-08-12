@@ -9,7 +9,14 @@ See perldoc for usage details.
 
 ### INSTALLATION
 
-If you want to just use the module download the tar.gz package above and run the following,
+You can use the cpan or cpanm CLI utility to install the package. This will attempt to satisfy all the dependencies for you.
+You may need to download the OpenSSL header files in order to install the Crypt::SSLeay dependancy. 
+In debian based systems you can install the headers with aptitude like so,
+
+	sudo apt-get install libssl-dev
+
+If you wish to install manually you will have to make sure you have the SOAP::Lite module installed.
+Download the [tar.gz package](https://metacpan.org/module/Enterasys::NetSight) and run the following,
 
 	tar -xvf Enterasys-NetSight-#.##.tar.gz
 	cd Enterasys-NetSight-#.##
@@ -17,15 +24,12 @@ If you want to just use the module download the tar.gz package above and run the
 	make test
 	sudo make install
 
-If make test fails you are probably missing SOAP::Lite or one of SOAP::Lite's dependencies.
-
-Alternatively you can have cpan minus install the package and satisfy all dependencies for you like so,
-
-	cpanm Enterasys-NetSight-#.##.tar.gz
+If make test fails you are probably missing SOAP::Lite or some other dependency.
 
 ### BUILDING PACKAGE FROM GIT
 
-If you wish the build a package from the git repository you need the Dist::Zilla application and git.
+If you wish the build a package from the git repository you will need git and the Dist::Zilla application along with
+the PodWeaver plugin.
 
 To build a package from git:
 
@@ -36,9 +40,9 @@ To build a package from git:
 To install the built package:
 
 	cd Enterasys-NetSight-#.##
-    perl Makefile.PL
-    make test
-    sudo make install
+	perl Makefile.PL
+	make test
+	sudo make install
 
 ### DEPENDENCIES
 

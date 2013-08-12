@@ -1,12 +1,11 @@
 package Enterasys::NetSight;
 use strict;
-use warnings;
 
 use SOAP::Lite;
 use Socket;
 use Carp;
 
-# On some systems Crypt::SSLeay uses IO::Socket::SSL and breaks,
+# On some systems Crypt::SSLeay tries to use IO::Socket::SSL and breaks,
 # This forces it to use Net::SSL just in case.
 $ENV{PERL_NET_HTTPS_SSL_SOCKET_CLASS}="Net::SSL";
 $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0;
