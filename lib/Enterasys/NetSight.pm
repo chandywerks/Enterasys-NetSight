@@ -1,6 +1,8 @@
 package Enterasys::NetSight;
 use strict;
 
+use Data::Dumper;
+
 use SOAP::Lite;
 use Socket;
 use Carp;
@@ -31,7 +33,7 @@ sub new
 	$self->{proxy} = "https://".$self->{user}.":".$self->{pass}."@".$self->{host}.":".$self->{port}."/axis/services/NetSightDeviceWebService";
 
 	$self->{soap} = SOAP::Lite->new(
-			uri		=> "http://ws.web.server.netsight.enterasys.com",
+			uri	=> "http://ws.web.server.netsight.enterasys.com",
 			proxy	=> $self->{proxy},
 		);
 	# Make sure we can make an API call or return undef
@@ -54,7 +56,7 @@ sub getAllDevices
 		{ carp($call->faultstring) && return undef }
 
 	# Grab IP out of each WsDeviceListResult
-	while(my($key,$value)=each($call->result->{data}))
+	while(my($key,$value)=each($call->result->{data} || return undef))
 		{ $devices{$value->{ip}}=$value }
 
 	return %devices;
@@ -69,7 +71,7 @@ sub getDevice
 
 	$args->{host}=_resolv($args->{host});
 
-	my $call=$self->{soap}->getDeviceByIpAddressEx($args->{host});
+	my $call=$self->{soap}->getDeviceByIpAddressEx($args->{host}) || return undef;
 
 	if($call->fault) 
 		{ carp($call->faultstring) && return undef }
@@ -161,7 +163,7 @@ sub getAuth
 	my ($self,$args)=@_;
 
 	if(!defined $args->{host})
-		{ carp("You must specify a host for getCli method") && return undef }
+		{ carp("You must specify a host for getAuth method") && return undef }
 	if($args->{refresh})
 		{ $self->{devices}=undef }
 	if(!defined $self->{devices})
@@ -170,7 +172,7 @@ sub getAuth
 	$args->{host}=_resolv($args->{host});
 
 	my %creds=();
-	my $device=$self->{devices}->{$args->{host}};
+	my $device=$self->{devices}->{$args->{host}} || return undef;
 
 	$creds{host}=$device->{dev};
 	$creds{user}=$device->{cliUsername};
@@ -203,7 +205,7 @@ sub exportDevices
 		$table{$temp{dev}}=\%temp;
 	}
 
-	return %table;
+	return %table || undef;
 }
 sub ipV6Enabled
 {
@@ -273,7 +275,10 @@ sub _resolv
 {
 	# Resolve IP for a hostname
 	my ($host)=@_;
-	return inet_ntoa(inet_aton($host));
+	if(eval{$host=inet_ntoa(inet_aton($host))})
+		{ return $host }
+	else
+		{ carp("Unable to resolve host: $host") && return undef }
 }
 1;
 
