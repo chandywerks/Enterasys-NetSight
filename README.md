@@ -10,12 +10,17 @@ See perldoc for usage details.
 ### INSTALLATION
 
 You can use the cpan or cpanm CLI utility to install the package. This will attempt to satisfy all the dependencies for you.
+
 You may need to download the OpenSSL header files in order to install the Crypt::SSLeay dependancy. 
-In debian based systems you can install the headers with aptitude like so,
+In debian based systems you can install the headers with aptitude,
 
 	sudo apt-get install libssl-dev
 
-If you wish to install manually you will have to make sure you have the SOAP::Lite module installed.
+You may also need to download XML parsing headers,
+
+	sudo apt-get install libexpat1-dev
+
+If you wish to install manually you will need to install the SOAP::Lite module first.
 Download the [tar.gz package](https://metacpan.org/module/Enterasys::NetSight) and run the following,
 
 	tar -xvf Enterasys-NetSight-#.##.tar.gz
