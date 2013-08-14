@@ -40,7 +40,7 @@ sub new
 	return defined(eval{$self->{soap}->isIpV6Enabled()})?bless($self, $class):undef;
 }
 
-# Get methods
+# Shortcut methods for getting and parsing method returns
 sub getAllDevices
 {
 	# Returns a hash table with IP Addresses for keys
@@ -84,8 +84,8 @@ sub getSnmp
 	# The format of this hash can be used to create a 
 	# new SNMP::Session with the Net-SNMP module
 
-	my ($self,$args)=@_;
-	my (%snmp,%temp)=();
+	my ($self, $args)=@_;
+	my (%snmp, %temp)=();
 
 	if(!defined $args->{host})
 		{ carp("You must specify a host for getSnmp method") && return undef }
@@ -167,14 +167,14 @@ sub getAuth
 	if($args->{refresh})
 		{ $self->{devices}=undef }
 	if(!defined $self->{devices})
-		{ $self->{devices}=exportDevices($self) or return undef }
+		{ $self->{devices}={exportDevices($self)}};
 
 	$args->{host}=_resolv($args->{host});
 
 	my %creds=();
-	my $device=$self->{devices}->{$args->{host}} || return undef;
+	my $device=$self->{devices}->{$args->{host}};
 
-	$creds{host}=$device->{dev};
+	$creds{host}=$device->{dev} || return undef;
 	$creds{user}=$device->{cliUsername};
 	$creds{pass}=$device->{cliLogin};
 	
@@ -189,7 +189,7 @@ sub exportDevices
 
 	my $call=$self->{soap}->exportDevicesAsNgf;
 
-	if($call->fault) 
+	if($call->fault)
 		{ carp($call->faultstring) && return undef }
 
 	foreach my $line(split("\n",$call->result))
@@ -205,7 +205,7 @@ sub exportDevices
 		$table{$temp{dev}}=\%temp;
 	}
 
-	return %table || undef;
+	return $call->result eq ""?undef:%table;
 }
 sub ipV6Enabled
 {
@@ -228,47 +228,6 @@ sub netSnmpEnabled
 	return $call->result();
 }
 
-# Add Methods
-sub addAuth
-{
-
-}
-sub addSnmp
-{
-
-}
-sub addDevice
-{
-
-}
-sub addProfile
-{
-
-}
-
-# Update Methods
-sub updateAuth
-{
-
-}
-sub updateSnmp
-{
-
-}
-sub updateDevice
-{
-
-}
-sub updateProfile
-{
-
-}
-
-# Delete Methods
-sub deleteDevice
-{
-
-}
 
 # Private
 sub _resolv
@@ -279,6 +238,15 @@ sub _resolv
 		{ return $host }
 	else
 		{ carp("Unable to resolve host: $host") && return undef }
+}
+sub _wsresult_error
+{
+	# Check error code of a WsResult structure, returns 1 on error
+	my ($result) = @_;
+	if($result->{success} eq "false")
+		{ carp("Error ".$result->{errorCode}.": ".$result->{errorMessage}) && return 1 }
+	else
+		{ return 0 }
 }
 1;
 
