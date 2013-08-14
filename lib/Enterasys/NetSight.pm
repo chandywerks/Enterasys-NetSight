@@ -39,7 +39,26 @@ sub new
 	# Make sure we can make an API call or return undef
 	return defined(eval{$self->{soap}->isIpV6Enabled()})?bless($self, $class):undef;
 }
+# Method for making unparsed API method calls w/ error checking
+sub call
+{
+	my ($self, $method, $args)=@_;
 
+	$args="" unless defined $args;
+	if(!defined($method))
+		{ carp("You must specify an API method") && return undef }
+
+	my $call=$self->{soap}->$method($args);
+		
+	if($call->fault) 
+		{ carp($call->faultstring) && return undef }
+
+	# TODO don't do this error check if method doesn't return a NsWsResult data type 
+	if(_wsresult_error($call->result))
+		{ return undef }
+	else
+		{ return $call->result }
+}
 # Shortcut methods for getting and parsing method returns
 sub getAllDevices
 {
@@ -215,7 +234,7 @@ sub ipV6Enabled
 	if($call->fault) 
 		{ carp($call->faultstring) && return undef }
 
-	return $call->result();
+	return $call->result eq "true"?1:0;
 }
 sub netSnmpEnabled
 {
@@ -225,10 +244,8 @@ sub netSnmpEnabled
 	if($call->fault) 
 		{ carp($call->faultstring) && return undef }
 
-	return $call->result();
+	return $call->result eq "true"?1:0;
 }
-
-
 # Private
 sub _resolv
 {
@@ -243,6 +260,7 @@ sub _wsresult_error
 {
 	# Check error code of a WsResult structure, returns 1 on error
 	my ($result) = @_;
+
 	if($result->{success} eq "false")
 		{ carp("Error ".$result->{errorCode}.": ".$result->{errorMessage}) && return 1 }
 	else
