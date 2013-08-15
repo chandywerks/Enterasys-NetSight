@@ -53,7 +53,6 @@ sub call
 	if($call->fault) 
 		{ carp($call->faultstring) && return undef }
 
-	# TODO don't do this error check if method doesn't return a NsWsResult data type 
 	if(_wsresult_error($call->result))
 		{ return undef }
 	else
@@ -261,10 +260,12 @@ sub _wsresult_error
 	# Check error code of a WsResult structure, returns 1 on error
 	my ($result) = @_;
 
-	if($result->{success} eq "false")
-		{ carp("Error ".$result->{errorCode}.": ".$result->{errorMessage}) && return 1 }
-	else
-		{ return 0 }
+	if(defined($result->{success}))
+	{
+		if($result->{success} eq "false")
+			{ carp("Error ".$result->{errorCode}.": ".$result->{errorMessage}) && return 1 }
+	}
+	return 0;
 }
 1;
 
