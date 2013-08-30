@@ -3,6 +3,7 @@ use strict;
 
 use Data::Dumper;
 
+#use SOAP::Lite +trace => 'all';
 use SOAP::Lite;
 use Socket;
 use Carp;
@@ -30,34 +31,17 @@ sub new
 	elsif(!$self->{pass})
 		{ carp("You must specify a password for new method") && return undef }
 
-	$self->{proxy} = "https://".$self->{user}.":".$self->{pass}."@".$self->{host}.":".$self->{port}."/axis/services/NetSightDeviceWebService";
+	$self->{proxy}="https://".$self->{user}.":".$self->{pass}."@".$self->{host}.":".$self->{port}."/axis/services/NetSightDeviceWebService";
+	$self->{uri}="http://ws.web.server.netsight.enterasys.com";
 
-	$self->{soap} = SOAP::Lite->new(
-			uri	=> "http://ws.web.server.netsight.enterasys.com",
+	$self->{soap}=SOAP::Lite->new(
+			uri		=> $self->{uri},
 			proxy	=> $self->{proxy},
 		);
 	# Make sure we can make an API call or return undef
 	return defined(eval{$self->{soap}->isIpV6Enabled()})?bless($self, $class):undef;
 }
-# Method for making unparsed API method calls w/ error checking
-sub call
-{
-	my ($self, $method, $args)=@_;
 
-	$args="" unless defined $args;
-	if(!defined($method))
-		{ carp("You must specify an API method") && return undef }
-
-	my $call=$self->{soap}->$method($args);
-		
-	if($call->fault) 
-		{ carp($call->faultstring) && return undef }
-
-	if(_wsresult_error($call->result))
-		{ return undef }
-	else
-		{ return $call->result }
-}
 # Shortcut methods for getting and parsing method returns
 sub getAllDevices
 {
@@ -82,7 +66,7 @@ sub getAllDevices
 sub getDevice
 {
 	# Returns a WsDevice table for a given IP address
-	my ($self,$args)=@_;
+	my ($self, $args)=@_;
 
 	if(!defined $args->{host})
 		{ carp("You must specify a host for getDevice method") && return undef }
@@ -178,7 +162,7 @@ sub getAuth
 {
 	# Runs the 'exportDevices' method if $self->{devices} hash ref is undefined
 	# and uses that to parse Cli credentials for all other calls.
-	my ($self,$args)=@_;
+	my ($self, $args)=@_;
 
 	if(!defined $args->{host})
 		{ carp("You must specify a host for getAuth method") && return undef }
@@ -245,7 +229,103 @@ sub netSnmpEnabled
 
 	return $call->result eq "true"?1:0;
 }
+
+# Methods for adding device data, if item already exists it will update
+sub addAuth
+{
+	my ($self, $args)=@_;
+	my @params=qw(username description loginPassword enablePassword configurationPassword type);
+	return _call($self, 'addAuthCredentialEx', \@params, $args);
+}
+sub addSnmp
+{
+	my ($self, $args)=@_;
+	my @params=qw(name snmpVersion communityName userName authPassword authType privPassword privType);
+	return _call($self, 'addCredentialEx', \@params, $args);
+}
+sub addDevice
+{
+	my ($self, $args)=@_;
+	my @params=qw(ipAddress profileName snmpContext nickName);
+	return _call($self, 'addDeviceEx', \@params, $args);
+}
+sub addProfile
+{
+	my ($self, $args)=@_;
+	my @params=qw(name snmpVersion read write maxAccess auth);
+	return _call($self, 'addProfileEx', \@params, $args);
+}
+
+# Methods for updating
+sub updateAuth
+{
+	my ($self, $args)=@_;
+	my @params=qw(username description loginPassword enablePassword configurationPassword type);
+	return _call($self, 'updateAuthCredentialEx', \@params, $args);
+}
+sub updateSnmp
+{
+	my ($self, $args)=@_;
+	my @params=qw(name communityName userName authPassword authType privPassword privType);
+	return _call($self, 'updateCredentialEx', \@params, $args);
+}
+sub updateDevice
+{
+	#TODO test this and write documentation.
+	my ($self, $args)=@_;
+	my @params=qw(devices);
+	return _call($self, 'updateDevicesEx', \@params, $args);
+}
+sub updateProfile
+{
+	my ($self, $args)=@_;
+	my @params=qw(name read write maxAccess authCredName);
+	return _call($self, 'updateProfileEx', \@params, $args);
+}
+
+# Methods for deleting
+sub deleteDevice
+{
+	my ($self, $args)=@_;
+	
+	if(!defined $args->{host})
+		{ carp("You must specify a host for deleteDevice method") && return undef }
+	$args->{host}=_resolv($args->{host});
+	
+	my $call=$self->{soap}->deleteDeviceByIpEx($args->{host});
+
+	if($call->fault)
+		{ carp($call->faultstring) && return undef }
+
+	if(_wsresult_error($call->result))
+		{ return undef }
+	else
+		{ return $call->result }
+}
+
 # Private
+sub _call
+{
+	# Internal method for making calls with multiple arguments
+	# Arguments must be in the correct order and unused arguments
+	# must be present but blank. The order of all args needed is specified
+	# in $params array and the args specified is in the $args table
+	my ($self, $method, $params, $args)=@_;
+	my @data;
+
+	foreach my $param(@$params)
+		{ push(@data, SOAP::Data->name($param => $args->{$param} || "")) }
+
+	my $call=$self->{soap}->$method(SOAP::Data->value(@data));
+
+	if($call->fault) 
+		{ carp($call->faultstring) && return undef }
+
+	if(_wsresult_error($call->result))
+		{ return undef }
+	else
+		{ return $call->result }
+}
 sub _resolv
 {
 	# Resolve IP for a hostname
@@ -260,7 +340,7 @@ sub _wsresult_error
 	# Check error code of a WsResult structure, returns 1 on error
 	my ($result) = @_;
 
-	if(defined($result->{success}))
+	if(eval{defined($result->{success})})
 	{
 		if($result->{success} eq "false")
 			{ carp("Error ".$result->{errorCode}.": ".$result->{errorMessage}) && return 1 }
@@ -283,15 +363,14 @@ sub _wsresult_error
 				pass	=> $password,
 			}) or die $!;
 
-You can make any API call available with the SOAP::Lite object accessable with $netsight->{soap}.
+This module provides wrapper methods for raw API method calls. These methods typically parse the response and return a perl friedly hash table.
 
-For example the following would print a NetSight Generated Format string containing SNMP credentials for a specified IP address,
+You can make any raw API call through the SOAP::Lite object accessable with $netsight->{soap}.
+For example the following would print a NetSight Generated Format string containing SNMP credentials,
 
 	print $netsight->{soap}->getSnmpCredentialAsNgf($ip)->result(),"\n";
 
-However this module provides shortcut methods returning useful data formats to work with. 
-
-For example we can parse the NGF formatted string into a hash table with the getSnmp method,
+However using the getSnmp wrapper method will parse the NGF string into a hash table,
 
 	print Dumper {$netsight->getSnmp({host=>$ip})};
 
@@ -304,6 +383,8 @@ Which you could then use to query a mib,
 	print $session->get('sysDescr.0');
 
 More examples
+
+	print Dumper $netsight->call(...
 
 	print Dumper $netsight->getAuth({host=>$ip, refresh=>1});
 	print Dumper $netsight->getDevice({host=>$ip});
@@ -343,7 +424,6 @@ Password for the user.
 Optional port, defaults to NetSight's default port 8443.
 
 =back
-
 
 =item getSnmp()
 
@@ -403,15 +483,245 @@ SNMP and/or CLI credentials. This method parses the NetSight Generated Format (N
 from the 'exportDevicesAsNgf' API call. Returns undef on error.
 
 
+=item addAuth()
+
+Add telnet/SSH authentication credential. Returns undef on error or a NsWsResult object indicating success.
+
+=over
+
+=item username
+
+Username for telnet/SSH access.
+
+=item description
+
+Textual description of the profile (64 char limit).
+
+=item loginPassword
+
+Login password for a telnet/SSH session.
+
+=item enablePassword
+
+Password to access enable mode.
+
+=item configurationPassword
+
+Password to enable configuration mode.
+
+=item type
+
+Type of protocol to use for CLI access, either telnet/SSH.
+
+=back
+
+
+=item addSnmp()
+
+Add SNMP authentication credential. Returns undef on error or a NsWsResult object indicating success.
+
+=over
+
+=item name
+
+Name for the credential set.
+
+=item snmpVersion
+
+Integer specifying SNMP version 1, 2, or 3.
+
+=item communityName
+
+Community name if SNMP v1/2c is being used.
+
+=item userName
+
+Username if SNMP v3 is being used.
+
+=item authPassword
+
+Authentication type if SNMPv3 is being used.
+
+=item authType
+
+Authentication type if SNMPv3 is being used, either MD5 or SHA1.
+
+=item privPassword
+
+SNMPv3 privacy password if SNMPv3 is being used.
+
+=item privType
+
+Privacy type if SNMPv3 is being used, either DES or AES.
+
+=back
+
+
+=item addDevice()
+
+Add a device to the NetSight database. Returns undef on error or a NsWsResult object indicating success.
+
+=over
+
+=item ipAddress
+
+IP address of the device to add.
+
+=item profileName
+
+Name of the access profile used to poll the device.
+
+=item snmpContext
+
+An SNMP context is a collection of MIB objects, often associated with a network entity. The SNMP context lets you access a subset of MIB objects related to that context. Console lets you specify a SNMP Context for both SNMPv1/v2 and SNMPv3. Or empty for no Context.
+
+=item nickName
+
+Common name to use for the device. Empty for no name.
+
+=back
+
+
+=item addProfile()
+
+Add an access profile. Returns undef on error or a NsWsResult object indicating success. 
+
+=over
+
+=item name
+
+Name for the profile.
+
+=item snmpVersion
+
+Integer specifying SNMP version 1, 2, or 3.
+
+=item read
+
+SNMP read configuration credentials name as created by addSnmp.
+
+=item write
+
+SNMP write configuration credentials name as created by addSnmp.
+
+=item maxAccess
+
+Credentials configuration to use maximum access mode to the device. Name as created by addSnmp.
+
+=item auth
+
+Telnet/SSH authentication credentials used in this profile. Name as created by addAuth.
+
+=back
+
+=item updateAuth()
+
+Update existing telnet/SSH credentials. Returns undef on error or a NsWsResult object indicating success.
+
+=over
+
+=item username
+
+Username for telnet/SSH access.
+
+=item description
+
+Textual description of the profile (64 char limit).
+
+=item loginPassword
+
+Login password for a telnet/SSH session.
+
+=item enablePassword
+
+Password to access enable mode.
+
+=item configurationPassword
+
+Password to enable configuration mode.
+
+=item type
+
+Type of protocol to use for CLI access, either telnet/SSH.
+
+=back
+
+
+=item updateSnmp()
+
+Update existing SNMP credentials. Returns undef on error or a NsWsResult object indicating success.
+
+=over
+
+=item name
+
+Name for the credential set.
+
+=item communityName
+
+Community name if SNMP v1/2c is being used.
+
+=item userName
+
+Username if SNMP v3 is being used.
+
+=item authPassword
+
+Authentication type if SNMPv3 is being used.
+
+=item authType
+
+Authentication type if SNMPv3 is being used, either MD5 or SHA1.
+
+=item privPassword
+
+SNMPv3 privacy password if SNMPv3 is being used.
+
+=item privType
+
+Privacy type if SNMPv3 is being used, either DES or AES.
+
+=back
+
+
+=item updateProfile()
+
+Update existing access profile. Returns undef on error or a NsWsResult object indicating success.
+
+=over
+
+=item name
+
+Name for the profile.
+
+=item read
+
+SNMP read configuration credentials name as created by addSnmp.
+
+=item write
+
+SNMP write configuration credentials name as created by addSnmp.
+
+=item maxAccess
+
+Credentials configuration to use maximum access mode to the device. Name as created by addSnmp.
+
+=item authCredName
+
+Telnet/SSH authentication credentials used in this profile. Name as created by addAuth.
+
+=back
+
+
 =item ipV6Enabled()
 
 Returns 1 if NetSight is configured for IPv6, 0 if not, undef on error. Shortcut for $netsight->{soap}->isNetSnmpEnabled.
-
 
 =item netSnmpEnabled()
 
 Returns 1 if NetSight is using the Net-SNMP stack, 0 if not, undef on error. Shortcut for $netsight->{soap}->netSnmpEnabled.
 
 =back
+
 
 =cut
