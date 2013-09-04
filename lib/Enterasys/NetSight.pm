@@ -1,9 +1,6 @@
 package Enterasys::NetSight;
 use strict;
 
-use Data::Dumper;
-
-#use SOAP::Lite +trace => 'all';
 use SOAP::Lite;
 use Socket;
 use Carp;
@@ -230,7 +227,7 @@ sub netSnmpEnabled
 	return $call->result eq "true"?1:0;
 }
 
-# Methods for adding device data, if item already exists it will update
+# Methods for adding device data
 sub addAuth
 {
 	my ($self, $args)=@_;
@@ -268,13 +265,6 @@ sub updateSnmp
 	my ($self, $args)=@_;
 	my @params=qw(name communityName userName authPassword authType privPassword privType);
 	return _call($self, 'updateCredentialEx', \@params, $args);
-}
-sub updateDevice
-{
-	#TODO test this and write documentation.
-	my ($self, $args)=@_;
-	my @params=qw(devices);
-	return _call($self, 'updateDevicesEx', \@params, $args);
 }
 sub updateProfile
 {
@@ -372,7 +362,7 @@ For example the following would print a NetSight Generated Format string contain
 
 However using the getSnmp wrapper method will parse the NGF string into a hash table,
 
-	print Dumper {$netsight->getSnmp({host=>$ip})};
+	print Dumper { $netsight->getSnmp({host=>$ip}) };
 
 Used with the perl SNMP module you can use the return of that method to create a new SNMP session object,
 
@@ -384,16 +374,51 @@ Which you could then use to query a mib,
 
 More examples
 
-	print Dumper $netsight->call(...
+Building a profile up
 
-	print Dumper $netsight->getAuth({host=>$ip, refresh=>1});
-	print Dumper $netsight->getDevice({host=>$ip});
+	$netsight->addAuth({
+		type		=> 'SSH',
+		description	=> 'cli',
+		username	=> 'foo',
+		loginPassword	=> 'password'
+	});
+	
+	$netsight->addSnmp({
+		name		=> 'readonly',
+		snmpVersion	=> '3',
+		userName	=> 'ro',
+		authPassword	=> 'foo',
+		authType	=> 'SHA1'
+	});
+	
+	$netsight->addSnmp({
+		name		=> 'readwrite',
+		snmpVersion	=> '3',
+		userName	=> 'rw',
+		authPassword	=> 'bar',
+		authType	=> 'SHA1'
+	});
+	
+	$netsight->addProfile({
+		name		=> 'foo',
+		snmpVersion	=> '3',
+		read		=> 'readonly',
+		write		=> 'readwrite',
+		maxAccess	=> 'readwrite',
+		auth		=> 'cli'
+	});
+	
+	$netsight->addDevice({
+		ipAddress	=> '127.0.0.1',
+		profileName	=> 'TestDevice',
+		nickName	=> 'Testing'
+	});
 
-	print Dumper $netsight->getAllDevices();
-	print Dumper $netsight->exportDevices();
+Getting info about a profile
 
-	print $netsight->ipV6Enabled?"true":"false";
-	print $netsight->netSnmpEnabled?"true":"false";
+	print Dumper { $netsight->getAuth({host=>127.0.0.1, refresh=>1}) };
+	print Dumper { $netsight->getSnmp({host=>'127.0.0.1', level=> ro}) };
+	print Dumper { $netsight->getDevice({host=>$ip}) };
 
 =head1 METHODS
 
@@ -540,7 +565,7 @@ Username if SNMP v3 is being used.
 
 =item authPassword
 
-Authentication type if SNMPv3 is being used.
+Authentication password if SNMPv3 is being used.
 
 =item authType
 
@@ -553,31 +578,6 @@ SNMPv3 privacy password if SNMPv3 is being used.
 =item privType
 
 Privacy type if SNMPv3 is being used, either DES or AES.
-
-=back
-
-
-=item addDevice()
-
-Add a device to the NetSight database. Returns undef on error or a NsWsResult object indicating success.
-
-=over
-
-=item ipAddress
-
-IP address of the device to add.
-
-=item profileName
-
-Name of the access profile used to poll the device.
-
-=item snmpContext
-
-An SNMP context is a collection of MIB objects, often associated with a network entity. The SNMP context lets you access a subset of MIB objects related to that context. Console lets you specify a SNMP Context for both SNMPv1/v2 and SNMPv3. Or empty for no Context.
-
-=item nickName
-
-Common name to use for the device. Empty for no name.
 
 =back
 
@@ -613,6 +613,32 @@ Credentials configuration to use maximum access mode to the device. Name as crea
 Telnet/SSH authentication credentials used in this profile. Name as created by addAuth.
 
 =back
+
+
+=item addDevice()
+
+Add a device to the NetSight database. Returns undef on error or a NsWsResult object indicating success.
+
+=over
+
+=item ipAddress
+
+IP address of the device to add.
+
+=item profileName
+
+Name of the access profile used to poll the device.
+
+=item snmpContext
+
+An SNMP context is a collection of MIB objects, often associated with a network entity. The SNMP context lets you access a subset of MIB objects related to that context. Console lets you specify a SNMP Context for both SNMPv1/v2 and SNMPv3. Or empty for no Context.
+
+=item nickName
+
+Common name to use for the device. Empty for no name.
+
+=back
+
 
 =item updateAuth()
 
