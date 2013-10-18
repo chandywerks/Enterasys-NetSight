@@ -58,7 +58,7 @@ sub getAllDevices
 	while(my($key,$value)=each($call->result->{data} || return undef))
 		{ $devices{$value->{ip}}=$value }
 
-	return %devices;
+	return \%devices;
 }
 sub getDevice
 {
@@ -153,7 +153,7 @@ sub getSnmp
 			{ return undef }
 	}
 
-	return %snmp;
+	return \%snmp;
 }
 sub getAuth
 {
@@ -177,7 +177,7 @@ sub getAuth
 	$creds{user}=$device->{cliUsername};
 	$creds{pass}=$device->{cliLogin};
 	
-	return %creds;
+	return \%creds;
 }
 sub exportDevices
 {
@@ -204,7 +204,7 @@ sub exportDevices
 		$table{$temp{dev}}=\%temp;
 	}
 
-	return $call->result eq ""?undef:%table;
+	return $call->result eq ""?undef:\%table;
 }
 sub ipV6Enabled
 {
@@ -362,11 +362,11 @@ For example the following would print a NetSight Generated Format string contain
 
 However using the getSnmp wrapper method will parse the NGF string into a hash table,
 
-	print Dumper { $netsight->getSnmp({host=>$ip}) };
+	print Dumper $netsight->getSnmp({host=>$ip});
 
 Used with the perl SNMP module you can use the return of that method to create a new SNMP session object,
 
-	my $session = new SNMP::Session($netsight->getSnmp({host=>$ip}));
+	my $session=SNMP::Session->new(%{$netsight->getSnmp({host=>$ip})});
 
 Which you could then use to query a mib,
 
@@ -416,9 +416,9 @@ Building a profile up
 
 Getting info about a profile
 
-	print Dumper { $netsight->getAuth({host=>127.0.0.1, refresh=>1}) };
-	print Dumper { $netsight->getSnmp({host=>'127.0.0.1', level=> ro}) };
-	print Dumper { $netsight->getDevice({host=>$ip}) };
+	print Dumper $netsight->getAuth({host=>127.0.0.1, refresh=>1});
+	print Dumper $netsight->getSnmp({host=>'127.0.0.1', level=> ro});
+	print Dumper $netsight->getDevice({host=>$ip});
 
 =head1 METHODS
 
