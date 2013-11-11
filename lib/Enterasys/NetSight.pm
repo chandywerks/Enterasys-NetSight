@@ -9,6 +9,7 @@ use Carp;
 # This forces it to use Net::SSL just in case.
 $ENV{PERL_NET_HTTPS_SSL_SOCKET_CLASS}="Net::SSL";
 $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0;
+$ENV{https_proxy}="";
 
 sub new
 {
