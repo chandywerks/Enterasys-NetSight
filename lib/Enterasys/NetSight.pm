@@ -9,6 +9,7 @@ use Carp;
 # This forces it to use Net::SSL just in case.
 $ENV{PERL_NET_HTTPS_SSL_SOCKET_CLASS}="Net::SSL";
 $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0;
+$ENV{https_proxy}="";
 
 sub new
 {
@@ -35,8 +36,11 @@ sub new
 			uri		=> $self->{uri},
 			proxy	=> $self->{proxy},
 		);
-	# Make sure we can make an API call or return undef
-	return defined(eval{$self->{soap}->isIpV6Enabled()})?bless($self, $class):undef;
+	# Try one API-Call to check if the API responds properly. On errors
+	# (wrong username or password, etc.) the SOAP-Module prints the
+	# API-Errorcode and exits the process.
+	$self->{soap}->isIpV6Enabled();
+	return bless($self, $class);
 }
 
 # Shortcut methods for getting and parsing method returns
