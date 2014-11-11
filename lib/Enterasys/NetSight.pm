@@ -58,9 +58,11 @@ sub getAllDevices
 	if($call->fault) 
 		{ carp($call->faultstring) && return undef }
 
+	if (!$call->result->{data})
+		{ return undef; }
+
 	# Grab IP out of each WsDeviceListResult
-	while(my($key,$value)=each($call->result->{data} || return undef))
-		{ $devices{$value->{ip}}=$value }
+	%devices = map { $_->{ip} => $_ } @{ $call->result->{data} };
 
 	return \%devices;
 }
